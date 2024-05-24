@@ -10,19 +10,43 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from config import TOKEN
 from keyboards.start_keyboard import start_keyboard
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
+
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
 
 
+class StartForm(StatesGroup):
+    phone = State()
+    name = State()
+
+
+
+
 @dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-
-    await message.answer('''
-    ✈️Добро пожаловать в главное меню чат-бота Управляющей компании "УЭР-ЮГ". Здесь Вы можете оставить заявку для управляющей компании или направить свое предложение по управлению домом. 
-    Просто воспользуйтесь кнопками меню, чтобы взаимодействовать с функциями бота:
-    ''', reply_markup=start_keyboard)
+async def command_start_handler(message: Message, state: FSMContext) -> None:
+    await message.answer('☀️Доброго времени суток, бот создан, чтобы обрабатывать заявки и обращения пользователей. Чтобы воспользоваться этим, пришлите для начала Ваше Имя и Фамилию')
+    await state.set_state(StartForm.name)
 
 
+
+    # await message.answer('''
+    # ✈️Добро пожаловать в главное меню чат-бота Управляющей компании "УЭР-ЮГ". Здесь Вы можете оставить заявку для управляющей компании или направить свое предложение по управлению домом.
+    # Просто воспользуйтесь кнопками меню, чтобы взаимодействовать с функциями бота:
+    # ''', reply_markup=start_keyboard)
+
+@dp.message(StartForm.name)
+async def name_handler(message: Message, state: FSMContext):
+    print(message.text)
+    await state.update_data(name=message.text)
+    await message.answer('📞Теперь отправьте Ваш номер телефона через +7 следующим сообщением:')
+    await state.set_state(StartForm.phone)
+    print(await state.get_data())
+
+@dp.message(StartForm.phone)
+async def phone_handler(message: Message, state: FSMContext):
+    print(message.text)
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
